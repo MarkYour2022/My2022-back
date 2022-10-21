@@ -2,7 +2,7 @@
   "name": "my2022-back",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "server": "nodemon app.js",
     "start": "nodemon --watch \"./routes/*.js\" --exec \"npm run server\""
@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/express": "^4.17.14",
     "@types/node": "^18.11.2",
+    "ejs": "^3.1.8",
     "eslint": "^8.25.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.26.0",
