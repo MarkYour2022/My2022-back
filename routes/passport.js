@@ -26,6 +26,7 @@ module.exports = () => {
             id: profile.id,
             name: profile.emails[0].value,
             provider: profile.provider,
+            posted: false,
           };
 
           const dbResult = await userCursor.insertOne(newUser);
@@ -55,6 +56,7 @@ module.exports = () => {
             id: profile.id,
             name: profile.displayName || profile.username,
             provider: profile.provider,
+            posted: false,
           };
 
           const dbResult = await userCursor.insertOne(newUser);
@@ -85,6 +87,7 @@ module.exports = () => {
             id: profile.id,
             name: profile.emails[0].value,
             provider: profile.provider,
+            posted: false,
           };
 
           const dbResult = await userCursor.insertOne(newUser);

@@ -11,6 +11,7 @@ const PORT = process.env.PORT;
 const router = require('./routes/index');
 const loginRouter = require('./routes/login');
 const passportRouter = require('./routes/passport');
+const postsRouter = require('./routes/posts');
 
 passportRouter();
 
@@ -18,7 +19,7 @@ app.set('view engine', 'ejs');
 app.set('views', 'views');
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 app.use(
@@ -32,7 +33,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use('/', router);
-app.use('/auth', loginRouter);
+app.use('/auth', loginRouter.router);
+app.use('/posts', postsRouter);
 
 app.use((err, req, res, next) => {
   console.log(err.stack);
