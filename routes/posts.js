@@ -39,31 +39,9 @@ router.post('/new', login.isLogin, async (req, res) => {
     }
 
     const newPost = {
-      postId,
+      post_id: postId,
       post_user: req.user.id,
-      post_content: {
-        name: req.body.name,
-        a1: req.body.a1,
-        a2: req.body.a2,
-        a3: req.body.a3,
-        a4: req.body.a4,
-        a5: req.body.a5,
-        a6: req.body.a6,
-        a7: req.body.a7,
-        a8: req.body.a8,
-        a9: req.body.a9,
-        a10: req.body.a10,
-        d1: req.body.d1 ? req.body.d1 : '',
-        d2: req.body.d2 ? req.body.d2 : '',
-        d3: req.body.d3 ? req.body.d3 : '',
-        d4: req.body.d4 ? req.body.d4 : '',
-        d5: req.body.d5 ? req.body.d5 : '',
-        d6: req.body.d6 ? req.body.d6 : '',
-        d7: req.body.d7 ? req.body.d7 : '',
-        d8: req.body.d8 ? req.body.d8 : '',
-        d9: req.body.d9 ? req.body.d9 : '',
-        d10: req.body.d10 ? req.body.d10 : '',
-      },
+      post_content: req.body,
       post_comments: [],
     };
 
@@ -88,9 +66,43 @@ router.post('/new', login.isLogin, async (req, res) => {
 router.get('/:postId', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
-  const post = await cursor.findOne({ postId: Number(req.params.postId) });
+  const post = await cursor.findOne({ post_id: Number(req.params.postId) });
 
   res.status(200).json({ post });
+});
+
+// 글 수정
+router.get('/:postId/edit', login.isLogin, async (req, res) => {
+  const client = await mongoClient.connect();
+  const cursor = client.db('My2022').collection('posts');
+  const editPost = await cursor.findOne({ post_id: Number(req.params.postId) });
+
+  if (editPost.post_user === req.user.id) {
+    res.status(200).json({ editPost });
+  } else {
+    const err = new Error('수정 권한이 없습니다');
+    res.status(404).json({ message: err.message });
+  }
+});
+
+router.post('/:postId/edit', login.isLogin, async (req, res) => {
+  if (req.body.name) {
+    const client = await mongoClient.connect();
+    const cursor = client.db('My2022').collection('posts');
+    const result = await cursor.updateOne(
+      { post_id: Number(req.params.postId) },
+      { $set: { post_content: req.body } }
+    );
+
+    if (result.acknowledged) res.status(201).json({ message: '업데이트 성공' });
+    else {
+      const err = new Error('통신 이상');
+      res.status(404).json({ message: err.message });
+    }
+  } else {
+    const err = new Error('Unexpected form data');
+    res.status(400).json({ message: err.message });
+  }
 });
 
 module.exports = router;
