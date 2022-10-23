@@ -68,7 +68,10 @@ router.get('/:postId', async (req, res) => {
   const cursor = client.db('My2022').collection('posts');
   const post = await cursor.findOne({ post_id: Number(req.params.postId) });
 
-  res.status(200).json({ post });
+  let isMine = false;
+  if (post.post_user === req.user.id) isMine = true;
+
+  res.status(200).json({ post, isMine });
 });
 
 // 글 수정
