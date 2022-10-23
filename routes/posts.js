@@ -12,14 +12,11 @@ router.get('/new', login.isLogin, async (req, res) => {
   const cursor = client.db('My2022').collection('users');
   const result = await cursor.findOne({ id: req.user.id });
 
-  if (!result.posted) res.render('posts');
-  else res.send('이미 글이 존재합니다.<br><a href="/">HOME</a>');
-
-  // if (result) res.status(200).json({ posted: result.posted });
-  // else {
-  //   const err = new Error('통신 이상');
-  //   res.status(404).json({ message: err.message });
-  // }
+  if (result) res.status(200).json({ posted: result.posted });
+  else {
+    const err = new Error('통신 이상');
+    res.status(404).json({ message: err.message });
+  }
 });
 
 router.post('/new', login.isLogin, async (req, res) => {
@@ -50,8 +47,8 @@ router.post('/new', login.isLogin, async (req, res) => {
       { id: req.user.id },
       { $set: { posted: true } }
     );
-    if (postResult.acknowledged && userResult.acknowledged) res.redirect('/');
-    // res.status(201).json({ message: '업데이트 성공' });
+    if (postResult.acknowledged && userResult.acknowledged)
+      res.status(201).json({ message: '업데이트 성공' });
     else {
       const err = new Error('통신 이상');
       res.status(404).json({ message: err.message });
