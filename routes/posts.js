@@ -129,4 +129,78 @@ router.delete('/:postId/delete', login.isLogin, async (req, res) => {
   }
 });
 
+// 댓글 등록
+router.post('/:postId/newComment', async (req, res) => {
+  if (req.body.name) {
+    const client = await mongoClient.connect();
+    const cursor = client.db('My2022').collection('posts');
+
+    const post = await cursor.findOne({ post_id: Number(req.params.postId) });
+    let commentId = 1;
+    const commentCount = post.post_comments.length;
+    if (commentCount > 0)
+      commentId = post.post_comments[commentCount - 1].comment_id + 1;
+
+    const newComment = {
+      comment_id: commentId,
+      ...req.body,
+    };
+    const result = await cursor.updateOne(
+      { post_id: Number(req.params.postId) },
+      { $push: { post_comments: newComment } }
+    );
+    if (result.acknowledged) res.status(201).json({ message: '업데이트 성공' });
+    else {
+      const err = new Error('통신 이상');
+      res.status(404).json({ message: err.message });
+    }
+  } else {
+    const err = new Error('Unexpected form data');
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// 댓글 수정
+router.post('/:postId/:commentId/editComment', async (req, res) => {
+  if (req.body.name) {
+    const client = await mongoClient.connect();
+    const cursor = client.db('My2022').collection('posts');
+
+    const editComment = {
+      comment_id: Number(req.params.commentId),
+      ...req.body,
+    };
+
+    const result = await cursor.findOneAndUpdate(
+      { post_id: Number(req.params.postId) },
+      { $set: { 'post_comments.$[element]': editComment } },
+      { arrayFilters: [{ 'element.comment_id': Number(req.params.commentId) }] }
+    );
+    if (result.ok) res.status(201).json({ message: '업데이트 성공' });
+    else {
+      const err = new Error('통신 이상');
+      res.status(404).json({ message: err.message });
+    }
+  } else {
+    const err = new Error('Unexpected form data');
+    res.status(400).json({ message: err.message });
+  }
+});
+
+router.delete('/:postId/:commentId/delComment', async (req, res) => {
+  const client = await mongoClient.connect();
+  const cursor = client.db('My2022').collection('posts');
+
+  const result = await cursor.updateOne(
+    { post_id: Number(req.params.postId) },
+    { $pull: { post_comments: { comment_id: Number(req.params.commentId) } } }
+  );
+
+  if (result.acknowledged) res.status(200).json({ message: '업데이트 성공' });
+  else {
+    const err = new Error('통신 이상');
+    res.status(404).json({ message: err.message });
+  }
+});
+
 module.exports = router;
