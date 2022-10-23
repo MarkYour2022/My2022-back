@@ -108,4 +108,25 @@ router.post('/:postId/edit', login.isLogin, async (req, res) => {
   }
 });
 
+// 글 삭제
+router.delete('/:postId/delete', login.isLogin, async (req, res) => {
+  const client = await mongoClient.connect();
+  const postsCursor = client.db('My2022').collection('posts');
+  const usersCursor = client.db('My2022').collection('users');
+
+  const postResult = await postsCursor.deleteOne({
+    post_id: Number(req.params.postId),
+  });
+  const userResult = await usersCursor.updateOne(
+    { id: req.user.id },
+    { $set: { posted: false } }
+  );
+  if (postResult.acknowledged && userResult.acknowledged)
+    res.status(200).json({ message: '업데이트 성공' });
+  else {
+    const err = new Error('통신 이상');
+    res.status(404).json({ message: err.message });
+  }
+});
+
 module.exports = router;
