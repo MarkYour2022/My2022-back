@@ -6,6 +6,7 @@ const router = express.Router();
 const mongoClient = require('./mongo');
 const login = require('./login');
 
+// 글쓰기
 router.get('/new', login.isLogin, async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('users');
@@ -23,12 +24,10 @@ router.get('/new', login.isLogin, async (req, res) => {
 
 router.post('/new', login.isLogin, async (req, res) => {
   if (req.body.name) {
-    // DB 연결
     const client = await mongoClient.connect();
     const postsCursor = client.db('My2022').collection('posts');
     const usersCursor = client.db('My2022').collection('users');
 
-    // postId 처리
     let postId = 1;
     const postsCount = await postsCursor.count();
     if (postsCount > 0) {
@@ -39,7 +38,6 @@ router.post('/new', login.isLogin, async (req, res) => {
       postId = lastPost.postId + 1;
     }
 
-    // post 처리
     const newPost = {
       postId,
       post_user: req.user.id,
@@ -68,34 +66,31 @@ router.post('/new', login.isLogin, async (req, res) => {
       },
       post_comments: [],
     };
-    await postsCursor.insertOne(newPost);
 
-    // user-posted 항목 처리
-    await usersCursor.updateOne(
+    const postResult = await postsCursor.insertOne(newPost);
+    const userResult = await usersCursor.updateOne(
       { id: req.user.id },
       { $set: { posted: true } }
     );
-    res.redirect('/');
-
-    // const postResult = await postsCursor.insertOne(newPost);
-    // const userResult = await usersCursor.updateOne(
-    //   { id: req.user.id },
-    //   { $set: { posted: true } }
-    // );
-    // if (postResult.acknowledged && userResult.acknowledged)
-    //   res.status(201).json({ message: '업데이트 성공' });
-    // else {
-    //   const err = new Error('통신 이상');
-    //   res.status(404).json({ message: err.message });
-    // }
+    if (postResult.acknowledged && userResult.acknowledged) res.redirect('/');
+    // res.status(201).json({ message: '업데이트 성공' });
+    else {
+      const err = new Error('통신 이상');
+      res.status(404).json({ message: err.message });
+    }
   } else {
     const err = new Error('Unexpected form data');
-    err.statusCode = 404;
-    throw err;
-
-    // const err = new Error('Unexpected form data');
-    // res.status(400).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
+});
+
+// 글 상세
+router.get('/:postId', async (req, res) => {
+  const client = await mongoClient.connect();
+  const cursor = client.db('My2022').collection('posts');
+  const post = await cursor.findOne({ postId: Number(req.params.postId) });
+
+  res.status(200).json({ post });
 });
 
 module.exports = router;
