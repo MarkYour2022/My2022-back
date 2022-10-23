@@ -4,6 +4,17 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 
+const isLogin = (req, res, next) => {
+  if (req.user) next();
+  else {
+    res.status(300);
+    res.send('로그인이 필요합니다.<br><a href="/">HOME</a>');
+  }
+  // else {
+  //   res.status(300).json({ msg: '로그인 필요' });
+  // }
+};
+
 // NAVER 로그인
 router.get('/naver', passport.authenticate('naver'));
 router.get(
@@ -39,7 +50,8 @@ router.get('/logout', (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
     return res.send('로그아웃 했습니다.<br><a href="/">HOME</a>');
+    // return res.status(200).json({ msg: '로그아웃 성공' });
   });
 });
 
-module.exports = router;
+module.exports = { router, isLogin };
