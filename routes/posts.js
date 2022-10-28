@@ -4,26 +4,25 @@ const express = require('express');
 const router = express.Router();
 
 const mongoClient = require('./mongo');
-const login = require('./login');
 
 // 글쓰기
-router.get('/new', login.isLogin, async (req, res) => {
+router.get('/new', async (req, res) => {
   const client = await mongoClient.connect();
-  const cursor = client.db('My2022').collection('users');
-  const result = await cursor.findOne({ id: req.user.id });
+  const cursor = client.db('My2022').collection('posts');
+  const result = await cursor.findOne({ post_user: req.body.id });
 
-  if (result) res.status(200).json({ posted: result.posted });
+  if (result) res.status(200).json({ posted: true });
+  else if (result === null) res.status(200).json({ posted: false });
   else {
     const err = new Error('통신 이상');
     res.status(404).json({ message: err.message });
   }
 });
 
-router.post('/new', login.isLogin, async (req, res) => {
-  if (req.body.name) {
+router.post('/new', async (req, res) => {
+  if (req.body.id && req.body.content) {
     const client = await mongoClient.connect();
     const postsCursor = client.db('My2022').collection('posts');
-    const usersCursor = client.db('My2022').collection('users');
 
     let postId = 1;
     const postsCount = await postsCursor.count();
@@ -37,17 +36,13 @@ router.post('/new', login.isLogin, async (req, res) => {
 
     const newPost = {
       post_id: postId,
-      post_user: req.user.id,
-      post_content: req.body,
+      post_user: req.body.id,
+      post_content: req.body.content,
       post_comments: [],
     };
 
     const postResult = await postsCursor.insertOne(newPost);
-    const userResult = await usersCursor.updateOne(
-      { id: req.user.id },
-      { $set: { posted: true } }
-    );
-    if (postResult.acknowledged && userResult.acknowledged)
+    if (postResult.acknowledged)
       res.status(201).json({ message: '업데이트 성공' });
     else {
       const err = new Error('통신 이상');
@@ -65,19 +60,20 @@ router.get('/:postId', async (req, res) => {
   const cursor = client.db('My2022').collection('posts');
   const post = await cursor.findOne({ post_id: Number(req.params.postId) });
 
-  let isMine = false;
-  if (post.post_user === req.user.id) isMine = true;
-
-  res.status(200).json({ post, isMine });
+  if (post) res.status(200).json({ post });
+  else {
+    const err = new Error('통신 이상');
+    res.status(404).json({ message: err.message });
+  }
 });
 
 // 글 수정
-router.get('/:postId/edit', login.isLogin, async (req, res) => {
+router.get('/:postId/edit', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
   const editPost = await cursor.findOne({ post_id: Number(req.params.postId) });
 
-  if (editPost.post_user === req.user.id) {
+  if (editPost) {
     res.status(200).json({ editPost });
   } else {
     const err = new Error('수정 권한이 없습니다');
@@ -85,13 +81,13 @@ router.get('/:postId/edit', login.isLogin, async (req, res) => {
   }
 });
 
-router.post('/:postId/edit', login.isLogin, async (req, res) => {
-  if (req.body.name) {
+router.post('/:postId/edit', async (req, res) => {
+  if (req.body.content) {
     const client = await mongoClient.connect();
     const cursor = client.db('My2022').collection('posts');
     const result = await cursor.updateOne(
       { post_id: Number(req.params.postId) },
-      { $set: { post_content: req.body } }
+      { $set: { post_content: req.body.content } }
     );
 
     if (result.acknowledged) res.status(201).json({ message: '업데이트 성공' });
@@ -106,19 +102,14 @@ router.post('/:postId/edit', login.isLogin, async (req, res) => {
 });
 
 // 글 삭제
-router.delete('/:postId/delete', login.isLogin, async (req, res) => {
+router.delete('/:postId/delete', async (req, res) => {
   const client = await mongoClient.connect();
   const postsCursor = client.db('My2022').collection('posts');
-  const usersCursor = client.db('My2022').collection('users');
 
   const postResult = await postsCursor.deleteOne({
     post_id: Number(req.params.postId),
   });
-  const userResult = await usersCursor.updateOne(
-    { id: req.user.id },
-    { $set: { posted: false } }
-  );
-  if (postResult.acknowledged && userResult.acknowledged)
+  if (postResult.acknowledged)
     res.status(200).json({ message: '업데이트 성공' });
   else {
     const err = new Error('통신 이상');
