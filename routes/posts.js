@@ -57,7 +57,7 @@ router.post('/new', async (req, res) => {
 router.get('/:userId', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
-  const post = await cursor.findOne({ post_user: req.params.userId });
+  const post = await cursor.findOne({ post_id: Number(req.params.userId) });
 
   if (post) res.status(200).json({ post });
   else {
