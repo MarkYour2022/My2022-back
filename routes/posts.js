@@ -20,7 +20,7 @@ router.get('/new', async (req, res) => {
 });
 
 router.post('/new', async (req, res) => {
-  if (req.body.id && req.body.content) {
+  if (req.body.post_id && req.body.post_content) {
     const client = await mongoClient.connect();
     const postsCursor = client.db('My2022').collection('posts');
 
@@ -31,13 +31,12 @@ router.post('/new', async (req, res) => {
         {},
         { sort: { $natural: -1 } }
       );
-      postId = lastPost.postId + 1;
+      postId = lastPost.post_id + 1;
     }
 
     const newPost = {
       post_id: postId,
-      post_user: req.body.id,
-      post_content: req.body.content,
+      ...req.body,
       post_comments: [],
     };
 
@@ -82,12 +81,12 @@ router.get('/:postId/edit', async (req, res) => {
 });
 
 router.post('/:postId/edit', async (req, res) => {
-  if (req.body.content) {
+  if (req.body.post_content) {
     const client = await mongoClient.connect();
     const cursor = client.db('My2022').collection('posts');
     const result = await cursor.updateOne(
       { post_id: Number(req.params.postId) },
-      { $set: { post_content: req.body.content } }
+      { $set: { post_content: req.body.post_content } }
     );
 
     if (result.acknowledged) res.status(201).json({ message: '업데이트 성공' });
