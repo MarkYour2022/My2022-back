@@ -55,10 +55,10 @@ router.post('/new', async (req, res) => {
 });
 
 // 글 상세
-router.get('/:postId', async (req, res) => {
+router.get('/:userId', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
-  const post = await cursor.findOne({ post_id: Number(req.params.postId) });
+  const post = await cursor.findOne({ post_user: req.params.userId });
 
   if (post) res.status(200).json({ post });
   else {
@@ -150,18 +150,13 @@ router.post('/:postId/newComment', async (req, res) => {
 
 // 댓글 수정
 router.post('/:postId/:commentId/editComment', async (req, res) => {
-  if (req.body.name) {
+  if (req.body.content) {
     const client = await mongoClient.connect();
     const cursor = client.db('My2022').collection('posts');
 
-    const editComment = {
-      comment_id: Number(req.params.commentId),
-      ...req.body,
-    };
-
     const result = await cursor.findOneAndUpdate(
       { post_id: Number(req.params.postId) },
-      { $set: { 'post_comments.$[element]': editComment } },
+      { $set: { 'post_comments.$[element].content': req.body.content } },
       { arrayFilters: [{ 'element.comment_id': Number(req.params.commentId) }] }
     );
     if (result.ok) res.status(201).json({ message: '업데이트 성공' });

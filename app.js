@@ -1,5 +1,6 @@
 // @ts-check
 const express = require('express');
+const cors = require('cors');
 
 require('dotenv').config();
 const session = require('express-session');
@@ -21,6 +22,7 @@ app.set('views', 'views');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use(cors());
 
 app.use(
   session({
