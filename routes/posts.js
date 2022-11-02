@@ -6,10 +6,10 @@ const router = express.Router();
 const mongoClient = require('./mongo');
 
 // 글쓰기
-router.get('/new', async (req, res) => {
+router.get('/new/:userId', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
-  const result = await cursor.findOne({ post_user: req.body.id });
+  const result = await cursor.findOne({ user_id: Number(req.params.userId) });
 
   if (result) res.status(200).json({ posted: true });
   else if (result === null) res.status(200).json({ posted: false });
@@ -20,7 +20,7 @@ router.get('/new', async (req, res) => {
 });
 
 router.post('/new', async (req, res) => {
-  if (req.body.post_id && req.body.post_content) {
+  if (req.body.user_id && req.body.post_content) {
     const client = await mongoClient.connect();
     const postsCursor = client.db('My2022').collection('posts');
 
@@ -53,11 +53,11 @@ router.post('/new', async (req, res) => {
   }
 });
 
-// 글 상세
+// 글 조회
 router.get('/:userId', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
-  const post = await cursor.findOne({ post_id: Number(req.params.userId) });
+  const post = await cursor.findOne({ user_id: Number(req.params.userId) });
 
   if (post) res.status(200).json({ post });
   else {
