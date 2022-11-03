@@ -41,8 +41,7 @@ router.post('/new', async (req, res) => {
     };
 
     const postResult = await postsCursor.insertOne(newPost);
-    if (postResult.acknowledged)
-      res.status(201).json({ message: '업데이트 성공' });
+    if (postResult.acknowledged) res.status(201).json({ newPost });
     else {
       const err = new Error('통신 이상');
       res.status(404).json({ message: err.message });
