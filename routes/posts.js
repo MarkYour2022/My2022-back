@@ -5,7 +5,7 @@ const router = express.Router();
 
 const mongoClient = require('./mongo');
 
-// 글쓰기
+// 작성한 글이 있는지 체크
 router.get('/new/:userId', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
@@ -19,18 +19,16 @@ router.get('/new/:userId', async (req, res) => {
   }
 });
 
+// 글쓰기
 router.post('/new', async (req, res) => {
   if (req.body.user_id && req.body.post_content) {
     const client = await mongoClient.connect();
-    const postsCursor = client.db('My2022').collection('posts');
+    const cursor = client.db('My2022').collection('posts');
 
     let postId = 1;
-    const postsCount = await postsCursor.count();
-    if (postsCount > 0) {
-      const lastPost = await postsCursor.findOne(
-        {},
-        { sort: { $natural: -1 } }
-      );
+    const count = await cursor.count();
+    if (count > 0) {
+      const lastPost = await cursor.findOne({}, { sort: { $natural: -1 } });
       postId = lastPost.post_id + 1;
     }
 
@@ -40,8 +38,8 @@ router.post('/new', async (req, res) => {
       post_comments: [],
     };
 
-    const postResult = await postsCursor.insertOne(newPost);
-    if (postResult.acknowledged) res.status(201).json({ newPost });
+    const result = await cursor.insertOne(newPost);
+    if (result.acknowledged) res.status(201).json({ newPost });
     else {
       const err = new Error('통신 이상');
       res.status(404).json({ message: err.message });
@@ -66,19 +64,6 @@ router.get('/:userId', async (req, res) => {
 });
 
 // 글 수정
-router.get('/:postId/edit', async (req, res) => {
-  const client = await mongoClient.connect();
-  const cursor = client.db('My2022').collection('posts');
-  const editPost = await cursor.findOne({ post_id: Number(req.params.postId) });
-
-  if (editPost) {
-    res.status(200).json({ editPost });
-  } else {
-    const err = new Error('수정 권한이 없습니다');
-    res.status(404).json({ message: err.message });
-  }
-});
-
 router.post('/:postId/edit', async (req, res) => {
   if (req.body.post_content) {
     const client = await mongoClient.connect();
@@ -88,7 +73,7 @@ router.post('/:postId/edit', async (req, res) => {
       { $set: { post_content: req.body.post_content } }
     );
 
-    if (result.acknowledged) res.status(201).json({ message: '업데이트 성공' });
+    if (result.acknowledged) res.status(200).json({ message: '글 수정 완료' });
     else {
       const err = new Error('통신 이상');
       res.status(404).json({ message: err.message });
@@ -102,13 +87,12 @@ router.post('/:postId/edit', async (req, res) => {
 // 글 삭제
 router.delete('/:postId/delete', async (req, res) => {
   const client = await mongoClient.connect();
-  const postsCursor = client.db('My2022').collection('posts');
+  const cursor = client.db('My2022').collection('posts');
 
-  const postResult = await postsCursor.deleteOne({
+  const result = await cursor.deleteOne({
     post_id: Number(req.params.postId),
   });
-  if (postResult.acknowledged)
-    res.status(200).json({ message: '업데이트 성공' });
+  if (result.acknowledged) res.status(200).json({ message: '글 삭제 완료' });
   else {
     const err = new Error('통신 이상');
     res.status(404).json({ message: err.message });
@@ -131,11 +115,13 @@ router.post('/:postId/newComment', async (req, res) => {
       comment_id: commentId,
       ...req.body,
     };
+
     const result = await cursor.updateOne(
       { post_id: Number(req.params.postId) },
       { $push: { post_comments: newComment } }
     );
-    if (result.acknowledged) res.status(201).json({ message: '업데이트 성공' });
+    if (result.acknowledged)
+      res.status(200).json({ message: '댓글 등록 완료' });
     else {
       const err = new Error('통신 이상');
       res.status(404).json({ message: err.message });
@@ -157,7 +143,7 @@ router.post('/:postId/:commentId/editComment', async (req, res) => {
       { $set: { 'post_comments.$[element].content': req.body.content } },
       { arrayFilters: [{ 'element.comment_id': Number(req.params.commentId) }] }
     );
-    if (result.ok) res.status(201).json({ message: '업데이트 성공' });
+    if (result.ok) res.status(200).json({ message: '댓글 수정 완료' });
     else {
       const err = new Error('통신 이상');
       res.status(404).json({ message: err.message });
@@ -168,6 +154,7 @@ router.post('/:postId/:commentId/editComment', async (req, res) => {
   }
 });
 
+// 댓글 삭제
 router.delete('/:postId/:commentId/delComment', async (req, res) => {
   const client = await mongoClient.connect();
   const cursor = client.db('My2022').collection('posts');
@@ -177,7 +164,7 @@ router.delete('/:postId/:commentId/delComment', async (req, res) => {
     { $pull: { post_comments: { comment_id: Number(req.params.commentId) } } }
   );
 
-  if (result.acknowledged) res.status(200).json({ message: '업데이트 성공' });
+  if (result.acknowledged) res.status(200).json({ message: '댓글 삭제 완료' });
   else {
     const err = new Error('통신 이상');
     res.status(404).json({ message: err.message });

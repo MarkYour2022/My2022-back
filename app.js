@@ -1,25 +1,29 @@
 // @ts-check
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT;
 
-const router = require('./routes/index');
 const postsRouter = require('./routes/posts');
-
-app.set('view engine', 'ejs');
-app.set('views', 'views');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(cors());
 
-app.use('/', router);
 app.use('/posts', postsRouter);
+// app.use('/', (req, res, next) => {
+//   res.sendFile(path.join(__dirname + '/client/build', 'index.html'));
+// });
+
+// app.get('*', (req, res, next) => {
+//   res.sendFile(path.join(__dirname + '/client/build/index.html'));
+// });
 
 app.use((err, req, res, next) => {
   console.log(err.stack);
